@@ -1,0 +1,13 @@
+{
+  "name": "token-lab",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "db:local": "wrangler d1 execute token-lab --local --file=schema.sql",
+    "dev": "wrangler pages dev"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}
