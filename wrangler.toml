@@ -8,4 +8,4 @@ pages_build_output_dir = "public"
 [[d1_databases]]
 binding = "DB"
 database_name = "token-lab"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "114ecfb7-fcf0-462f-8566-47549851576d"
