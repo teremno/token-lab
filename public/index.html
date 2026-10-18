@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Token Lab - генератор токенів з одного кольору</title>
+  <meta name="description" content="Введи бренд-колір і отримай шкалу 50-950, семантичні токени для світлої і темної теми, перевірку контрасту WCAG та експорт у CSS, Tailwind і tokens.json.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Перейти до змісту</a>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="logo" href="#top" aria-label="Token Lab - на початок">
+        <svg class="logo__mark" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+          <rect x="1.5" y="1.5" width="21" height="21" stroke="currentColor" stroke-width="1"/>
+          <rect x="1.5" y="1.5" width="10.5" height="10.5" fill="currentColor"/>
+          <rect x="12" y="12" width="10.5" height="10.5" fill="currentColor" opacity="0.4"/>
+        </svg>
+        <span class="logo__name">Token Lab</span>
+      </a>
+      <nav class="site-nav" aria-label="Розділи сторінки">
+        <a href="#scale">Шкала</a>
+        <a href="#tokens">Токени</a>
+        <a href="#contrast">Контраст</a>
+        <a href="#export">Експорт</a>
+      </nav>
+      <button type="button" class="btn btn--primary site-header__share" id="share-btn" data-action="share">Поділитися</button>
+    </div>
+    <div class="share-bar" id="share-bar" hidden>
+      <div class="share-bar__inner">
+        <span class="share-bar__label">Посилання на палітру</span>
+        <a class="share-bar__link" id="share-link" href="/"></a>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout" id="top">
+    <aside class="panel" aria-labelledby="h1">
+      <p class="eyebrow">01 / БРЕНД-КОЛІР</p>
+      <h1 id="h1" class="panel__title">Один колір. Уся система токенів.</h1>
+      <p class="panel__lead">Введи бренд-колір і отримай шкалу, семантичні токени для світлої та темної теми, перевірку контрасту й готовий експорт.</p>
+
+      <div class="field" id="hex-field">
+        <label class="field__label" for="hex-input">Hex-код</label>
+        <div class="field__row">
+          <div class="hex-box">
+            <span class="hex-box__prefix" aria-hidden="true">#</span>
+            <input class="hex-box__input" id="hex-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="7" value="4F46E5" aria-describedby="hex-hint" aria-invalid="false">
+          </div>
+          <label class="picker" title="Вибрати колір">
+            <span class="sr-only">Вибрати колір у палітрі</span>
+            <input class="picker__input" id="hex-picker" type="color" value="#4f46e5">
+            <span class="picker__chip" id="picker-chip" aria-hidden="true"></span>
+          </label>
+        </div>
+        <p class="field__hint" id="hex-hint">3 або 6 символів, з # або без.</p>
+        <p class="field__error" id="hex-error" role="alert" hidden></p>
+      </div>
+
+      <div class="presets" role="group" aria-labelledby="presets-label">
+        <p class="presets__label" id="presets-label">Спробуй</p>
+        <div class="presets__list" id="presets"></div>
+      </div>
+
+      <dl class="summary">
+        <div class="summary__row">
+          <dt>Тайл колір</dt>
+          <dd id="sum-tile"></dd>
+        </div>
+        <div class="summary__row">
+          <dt>HEX</dt>
+          <dd id="sum-hex"></dd>
+        </div>
+        <div class="summary__row">
+          <dt>Текст на кнопці</dt>
+          <dd id="sum-on"></dd>
+        </div>
+      </dl>
+    </aside>
+
+    <main class="content" id="main">
+      <section class="block" id="scale" aria-labelledby="scale-h">
+        <h2 class="block__title" id="scale-h">02 / ШКАЛА</h2>
+        <p class="block__lead">Дві шкали з 11 кроків. Твій колір стоїть без змін на найближчому кроці. Клік по свотчу копіює hex.</p>
+        <div id="scale-out"></div>
+      </section>
+
+      <section class="block" id="tokens" aria-labelledby="tokens-h">
+        <h2 class="block__title" id="tokens-h">03 / ТОКЕНИ</h2>
+        <p class="block__lead">Семантичні токени посилаються на кроки шкали. Окремі значення для світлої і темної теми.</p>
+        <div class="table-wrap">
+          <table class="tokens-table">
+            <caption class="sr-only">Семантичні токени для світлої та темної теми</caption>
+            <thead>
+              <tr><th scope="col">Токен</th><th scope="col">Світла</th><th scope="col">Темна</th></tr>
+            </thead>
+            <tbody id="tokens-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="block" id="contrast" aria-labelledby="contrast-h">
+        <h2 class="block__title" id="contrast-h">04 / КОНТРАСТ</h2>
+        <p class="block__lead">Картка, інпут і кнопка, зібрані з реальних токенів. Бейджі показують рівень WCAG для кожної пари.</p>
+        <div class="pv-grid" id="pv-out"></div>
+      </section>
+
+      <section class="block" id="export" aria-labelledby="export-h">
+        <h2 class="block__title" id="export-h">05 / ЕКСПОРТ</h2>
+        <p class="block__lead">Скопіюй токени у потрібному форматі.</p>
+        <div class="export">
+          <div class="export__bar">
+            <div class="tabs" role="tablist" aria-label="Формат експорту" id="export-tabs">
+              <button type="button" role="tab" class="tab" id="tab-css" data-tab="css" aria-selected="true" aria-controls="panel-css" tabindex="0">CSS</button>
+              <button type="button" role="tab" class="tab" id="tab-tailwind" data-tab="tailwind" aria-selected="false" aria-controls="panel-tailwind" tabindex="-1">Tailwind</button>
+              <button type="button" role="tab" class="tab" id="tab-json" data-tab="json" aria-selected="false" aria-controls="panel-json" tabindex="-1">tokens.json</button>
+            </div>
+            <button type="button" class="btn" data-action="copy-export" id="copy-export">Копіювати</button>
+          </div>
+          <div role="tabpanel" class="tabpanel" id="panel-css" aria-labelledby="tab-css" tabindex="0"><pre class="code"><code id="code-css"></code></pre></div>
+          <div role="tabpanel" class="tabpanel" id="panel-tailwind" aria-labelledby="tab-tailwind" tabindex="0" hidden><pre class="code"><code id="code-tailwind"></code></pre></div>
+          <div role="tabpanel" class="tabpanel" id="panel-json" aria-labelledby="tab-json" tabindex="0" hidden><pre class="code"><code id="code-json"></code></pre></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <p>Token Lab. Кольори застосунку нейтральні, палітра живе тільки у свотчах і прев'ю.</p>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>
