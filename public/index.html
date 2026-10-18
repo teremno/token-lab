@@ -6,6 +6,7 @@
   <meta name="color-scheme" content="dark">
   <title>Token Lab - генератор токенів з одного кольору</title>
   <meta name="description" content="Введи бренд-колір і отримай шкалу 50-950, семантичні токени для світлої і темної теми, перевірку контрасту WCAG та експорт у CSS, Tailwind і tokens.json.">
+  <link rel="icon" href="data:,">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
@@ -13,7 +14,7 @@
   <script type="module" src="/app.js"></script>
 </head>
 <body>
-  <a class="skip-link" href="#main">Перейти до змісту</a>
+  <a class="skip-link" href="#hex-input">Перейти до вибору кольору</a>
 
   <header class="site-header">
     <div class="site-header__inner">
@@ -41,6 +42,13 @@
     </div>
   </header>
 
+  <div class="notice" id="notice" hidden>
+    <div class="notice__inner">
+      <p class="notice__text" id="notice-text" role="status"></p>
+      <button type="button" class="notice__close" data-action="dismiss-notice">Закрити</button>
+    </div>
+  </div>
+
   <div class="layout" id="top">
     <aside class="panel" aria-labelledby="h1">
       <p class="eyebrow">01 / БРЕНД-КОЛІР</p>
@@ -52,7 +60,7 @@
         <div class="field__row">
           <div class="hex-box">
             <span class="hex-box__prefix" aria-hidden="true">#</span>
-            <input class="hex-box__input" id="hex-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="7" value="4F46E5" aria-describedby="hex-hint" aria-invalid="false">
+            <input class="hex-box__input" id="hex-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" value="4F46E5" aria-describedby="hex-hint" aria-invalid="false">
           </div>
           <label class="picker" title="Вибрати колір">
             <span class="sr-only">Вибрати колір у палітрі</span>

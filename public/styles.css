@@ -7,7 +7,7 @@
   --surface: #111113;
   --surface-2: #18181b;
   --line: #27272b;
-  --line-strong: #3f3f46;
+  --line-control: #71717a;
   --text: #f4f4f5;
   --text-muted: #a1a1aa;
   --btn-bg: #f4f4f5;
@@ -118,7 +118,7 @@ code, pre, .mono {
   justify-content: center;
   min-height: var(--tap);
   padding: 0 16px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line-control);
   border-radius: var(--radius);
   background: var(--surface-2);
   color: var(--text);
@@ -229,6 +229,40 @@ code, pre, .mono {
   min-width: 0;
 }
 
+.notice {
+  border-top: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.notice__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 4px var(--gutter);
+}
+
+.notice__text {
+  font-size: 13px;
+  min-width: 0;
+}
+
+.notice__close {
+  flex: none;
+  min-height: var(--tap);
+  padding: 0 12px;
+  border: 1px solid var(--line-control);
+  border-radius: var(--radius);
+  background: transparent;
+  font-size: 13px;
+}
+
+.notice__close:hover {
+  border-color: var(--text-muted);
+}
+
 /* ---------- Каркас ---------- */
 
 .layout {
@@ -296,7 +330,7 @@ code, pre, .mono {
   min-width: 0;
   align-items: center;
   min-height: var(--tap);
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line-control);
   border-radius: var(--radius);
   background: var(--bg);
 }
@@ -367,7 +401,7 @@ code, pre, .mono {
 .picker__chip {
   position: absolute;
   inset: 0;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line-control);
   border-radius: var(--radius);
   background: var(--c);
 }
@@ -396,7 +430,7 @@ code, pre, .mono {
   gap: 10px;
   min-height: var(--tap);
   padding: 6px 10px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-control);
   border-radius: var(--radius);
   background: var(--bg);
   text-align: left;
@@ -415,7 +449,7 @@ code, pre, .mono {
   flex: none;
   width: 20px;
   height: 20px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line-control);
   border-radius: 50%;
   background: var(--c);
 }
@@ -474,7 +508,7 @@ code, pre, .mono {
   flex: none;
   width: 14px;
   height: 14px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line-control);
   border-radius: 3px;
   background: var(--c);
 }
@@ -537,7 +571,7 @@ code, pre, .mono {
 .swatch__chip {
   display: block;
   height: 56px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line-control);
   border-radius: 4px;
   background: var(--c);
 }
@@ -560,7 +594,7 @@ code, pre, .mono {
 
 .swatch__hex {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.2;
   color: var(--text-muted);
 }
@@ -571,9 +605,9 @@ code, pre, .mono {
   padding: 0 4px;
   border-radius: 3px;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   line-height: 16px;
 }
 
@@ -714,7 +748,7 @@ code, pre, .mono {
 
 .pv__input:focus-visible,
 .pv__btn:focus-visible {
-  outline: 2px solid var(--t-accent);
+  outline: 2px solid var(--t-text);
   outline-offset: 2px;
 }
 
@@ -782,7 +816,7 @@ code, pre, .mono {
   min-width: 72px;
   justify-content: center;
   padding: 2px 8px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line-control);
   border-radius: 999px;
   font-family: var(--font-mono);
   font-size: 11px;
@@ -845,7 +879,7 @@ code, pre, .mono {
 }
 
 .tab[aria-selected="true"] {
-  border-color: var(--line-strong);
+  border-color: var(--line-control);
   background: var(--surface-2);
   color: var(--text);
 }
@@ -958,7 +992,7 @@ code, pre, .mono {
 @media (min-width: 1024px) {
   .layout {
     grid-template-columns: 360px minmax(0, 1fr);
-    gap: 48px;
+    gap: 32px;
     align-items: start;
     padding-top: 32px;
   }
@@ -981,9 +1015,6 @@ code, pre, .mono {
     gap: 8px 4px;
   }
 
-  .swatch__hex {
-    font-size: 9.5px;
-  }
 }
 
 @media (min-width: 1024px) and (min-height: 760px) {
@@ -994,8 +1025,12 @@ code, pre, .mono {
 }
 
 @media (min-width: 1280px) {
+  .layout {
+    gap: 48px;
+  }
+
   .swatch__hex {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .swatch__chip {

@@ -57,6 +57,8 @@ const els = {
   shareBtn: $('#share-btn'),
   shareBar: $('#share-bar'),
   shareLink: $('#share-link'),
+  notice: $('#notice'),
+  noticeText: $('#notice-text'),
 };
 
 const state = {
@@ -85,19 +87,38 @@ function debounce(fn, ms) {
   };
 }
 
+// Один таймер на весь цикл тосту: кожен новий виклик скасовує попередній.
 let toastTimer = 0;
 function showToast(message) {
   clearTimeout(toastTimer);
   els.toast.classList.remove('is-visible');
   els.toast.textContent = '';
   // Скидання тексту перед новим повідомленням, щоб повтор теж озвучувався.
-  setTimeout(() => {
+  toastTimer = setTimeout(() => {
     els.toast.textContent = message;
     els.toast.classList.add('is-visible');
     toastTimer = setTimeout(() => {
       els.toast.classList.remove('is-visible');
     }, TOAST_MS);
   }, 30);
+}
+
+function showNotice(message) {
+  els.notice.hidden = false;
+  els.noticeText.textContent = '';
+  setTimeout(() => {
+    els.noticeText.textContent = message;
+  }, 50);
+}
+
+function hideNotice() {
+  els.notice.hidden = true;
+  els.noticeText.textContent = '';
+}
+
+function paletteNotFound() {
+  showNotice('Палітру не знайдено. Показано стандартну.');
+  history.replaceState(null, '', '/');
 }
 
 async function copyText(text) {
@@ -160,6 +181,7 @@ function applyHex(rawHex, { syncInput = true } = {}) {
   state.hex = hex;
   state.data = data;
   setError('');
+  hideNotice();
   if (syncInput) els.input.value = hex.slice(1);
   render();
   return true;
@@ -178,6 +200,10 @@ function setError(message) {
 
 function validateInput({ commit = false } = {}) {
   const value = els.input.value.trim();
+  if (value === '') {
+    setError('Введи hex-код');
+    return;
+  }
   const hex = normalizeHex(value);
   if (!hex) {
     setError('Невалідний hex. Приклад: #4F46E5');
@@ -388,6 +414,7 @@ async function loadShared(id) {
     const res = await fetch(`/api/palettes/${encodeURIComponent(id)}`);
     if (res.status === 404) {
       showToast('Палітру не знайдено');
+      paletteNotFound();
       return;
     }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -421,6 +448,9 @@ document.addEventListener('click', (event) => {
     case 'share':
       share();
       break;
+    case 'dismiss-notice':
+      hideNotice();
+      break;
     default:
       break;
   }
@@ -445,5 +475,12 @@ renderPresets();
 selectTab(state.tab);
 applyHex(DEFAULT_HEX);
 
-const match = location.pathname.match(/^\/p\/([0-9A-Za-z]{6})$/);
-if (match) loadShared(match[1]);
+if (location.pathname.startsWith('/p/')) {
+  const match = location.pathname.match(/^\/p\/([0-9A-Za-z]{6})\/?$/);
+  if (match) {
+    loadShared(match[1]);
+  } else {
+    showToast('Палітру не знайдено');
+    paletteNotFound();
+  }
+}
