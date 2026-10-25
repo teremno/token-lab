@@ -97,10 +97,11 @@ export function buildTokens(brandHex) {
   const darkBg = neutral[950];
   const darkSurface = neutral[900];
   const mutedStepDark = firstPassingStep(neutral, 400, -1, [darkBg, darkSurface], MIN_TEXT);
-  // Світліший крок: 400 (якщо колір користувача темніший), інакше його ж крок.
-  const darkStart = STEPS.indexOf(userStep) > STEPS.indexOf(400) ? 400 : userStep;
+  // Світліший крок, ніж у світлій темі: щонайменше на один крок світліше і не темніше за 400.
+  const darkStart = STEPS[clampIndex(Math.min(STEPS.indexOf(400), STEPS.indexOf(userStep) - 1))];
   const darkAccentStep = firstPassingStep(brand, darkStart, -1, [darkBg], MIN_UI);
-  const darkAccentHoverStep = stepAt(darkAccentStep, -1);
+  // Hover ще світліший; якщо світліше нікуди (крок 50) - на крок темніше.
+  const darkAccentHoverStep = darkAccentStep === STEPS[0] ? stepAt(darkAccentStep, +1) : stepAt(darkAccentStep, -1);
   const darkAccent = tok('brand', darkAccentStep, scales);
 
   const dark = {

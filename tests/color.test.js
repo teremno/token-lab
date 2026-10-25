@@ -14,10 +14,11 @@ import {
 const KEYS = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'];
 const HEX_RE = /^#[0-9A-F]{6}$/;
 const SAMPLES = ['#4F46E5', '#FACC15', '#E11D48', '#0D9488', '#C2410C', '#7C3AED', '#2563EB', '#16A34A', '#808080', '#0B1020'];
-const EDGES = ['#000000', '#FFFFFF', '#777777', '#FF0000', '#00FF00', '#0000FF'];
+const EDGES = ['#000000', '#FFFFFF', '#777777', '#FF0000', '#00FF00', '#0000FF', '#FFFF00'];
+const YELLOWS = ['#FACC15', '#FFFF00', '#EAB308', '#FDE047', '#F59E0B'];
 
-// Independent OKLab lightness, used only to inspect results.
-function oklabL(hex) {
+// Independent OKLab lightness and hue, used only to inspect results.
+function oklab(hex) {
   const n = parseInt(hex.slice(1), 16);
   const lin = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
     const c = v / 255;
@@ -27,8 +28,13 @@ function oklabL(hex) {
   const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
   const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
   const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
-  return 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
+  const L = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
+  const a = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
+  const bb = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+  return { L, h: ((Math.atan2(bb, a) * 180) / Math.PI + 360) % 360 };
 }
+const oklabL = (hex) => oklab(hex).L;
+const oklabHue = (hex) => oklab(hex).h;
 
 test('normalizeHex handles 3-digit, no #, lowercase, whitespace', () => {
   assert.equal(normalizeHex('#4f46e5'), '#4F46E5');
@@ -125,7 +131,7 @@ test('generateScale lightness decreases monotonically from 50 to 950', () => {
 });
 
 test('generateScale spacing is even on each side of the anchor', () => {
-  for (const hex of SAMPLES) {
+  for (const hex of [...SAMPLES, ...YELLOWS]) {
     const scale = generateScale(hex);
     const k = KEYS.indexOf(String(nearestStep(hex)));
     const ls = KEYS.map((key) => oklabL(scale[key]));
@@ -208,4 +214,51 @@ test('generateNeutral is low chroma and carries the brand hue', () => {
 test('invalid hex passed to math functions throws instead of returning NaN', () => {
   assert.throws(() => generateScale('ZZ12'), TypeError);
   assert.throws(() => contrastRatio('#FFF', 'nope'), TypeError);
+});
+
+test('yellow brand colors land in the middle of the scale, not at 50/100', () => {
+  assert.equal(nearestStep('#FACC15'), 400);
+  assert.equal(nearestStep('#EAB308'), 500);
+  assert.equal(nearestStep('#FDE047'), 300);
+  assert.ok([200, 300].includes(nearestStep('#FFFF00')), `#FFFF00 at ${nearestStep('#FFFF00')}`);
+  assert.equal(nearestStep('#F59E0B'), 500);
+});
+
+test('anchor of common non-yellow brands stays where it was', () => {
+  for (const hex of ['#4F46E5', '#7C3AED', '#2563EB', '#E11D48', '#16A34A']) {
+    assert.equal(nearestStep(hex), 600, hex);
+  }
+});
+
+test('yellow scale keeps a visible gap between 50 and the anchor', () => {
+  for (const hex of YELLOWS) {
+    const s = generateScale(hex);
+    const k = KEYS.indexOf(String(nearestStep(hex)));
+    const gap = (oklabL(s[50]) - oklabL(hex)) / k;
+    assert.ok(gap >= 0.01, `${hex}: ${gap.toFixed(4)} per step`);
+  }
+});
+
+test('dark yellow steps shift towards amber, not olive', () => {
+  for (const hex of ['#FACC15', '#EAB308', '#FFFF00']) {
+    const s = generateScale(hex);
+    const h = oklabHue(hex);
+    for (const k of ['700', '800', '900']) {
+      assert.ok(oklabHue(s[k]) < h - 10, `${hex} ${k}: hue ${oklabHue(s[k]).toFixed(1)} vs ${h.toFixed(1)}`);
+      const n = parseInt(s[k].slice(1), 16);
+      const [r, g] = [(n >> 16) & 255, (n >> 8) & 255];
+      assert.ok(r >= g * 1.3, `${hex} ${k} ${s[k]} looks olive`);
+    }
+  }
+});
+
+test('non-yellow hues keep their hue on the dark side', () => {
+  for (const hex of ['#4F46E5', '#E11D48', '#0D9488', '#16A34A']) {
+    const s = generateScale(hex);
+    const h = oklabHue(hex);
+    for (const k of ['800', '900']) {
+      const d = Math.abs(((oklabHue(s[k]) - h + 540) % 360) - 180);
+      assert.ok(d < 3, `${hex} ${k}: hue drift ${d.toFixed(2)}`);
+    }
+  }
 });
