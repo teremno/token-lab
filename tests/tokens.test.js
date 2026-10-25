@@ -175,3 +175,28 @@ test('toTokensJson: білий посилається на primitives.white', ()
   const json = JSON.parse(toTokensJson(buildTokens('#4F46E5')));
   assert.equal(json.light.surface.$value, '{primitives.white}');
 });
+
+test('dark accent - світліший крок, ніж light accent', () => {
+  for (const brand of ['#4F46E5', '#FACC15', '#FFFF00', '#EAB308', '#22D3EE', '#000000']) {
+    const t = buildTokens(brand);
+    const light = STEPS.indexOf(Number(t.light.accent.ref.split('-')[1]));
+    const dark = STEPS.indexOf(Number(t.dark.accent.ref.split('-')[1]));
+    assert.ok(dark < light, `${brand}: dark ${t.dark.accent.ref} vs light ${t.light.accent.ref}`);
+    assert.ok(contrastRatio(t.dark.accent.hex, t.dark.bg.hex) >= 3, `${brand} dark accent 3:1`);
+    assert.notEqual(t.dark['accent-hover'].ref, t.dark.accent.ref, `${brand} dark hover`);
+  }
+});
+
+test('#FACC15: accent 400 у світлій, 300 у темній, on-accent темний в обох', () => {
+  const t = buildTokens('#FACC15');
+  assert.equal(t.light.accent.ref, 'brand-400');
+  assert.equal(t.dark.accent.ref, 'brand-300');
+  assert.equal(t.light['on-accent'].ref, 'neutral-950');
+  assert.equal(t.dark['on-accent'].ref, 'neutral-950');
+});
+
+test('білий бренд: hover у темній темі не дорівнює accent', () => {
+  const t = buildTokens('#FFFFFF');
+  assert.equal(t.dark.accent.ref, 'brand-50');
+  assert.equal(t.dark['accent-hover'].ref, 'brand-100');
+});

@@ -12,6 +12,21 @@ const NEUTRAL_L_MIN = 0.14;
 const NEUTRAL_C_EDGE = 0.006;
 const NEUTRAL_C_MID = 0.018;
 const GAMUT_EPS = 1e-6;
+// Reference ramp: step 500 sits at REF_MID_BASE + REF_MID_CUSP * (lightness of the hue's sRGB cusp).
+// Hues whose most vivid color is light (yellow, lime, cyan) get a lighter middle, so #FACC15 lands
+// near 400 and not at 100, while indigo/blue/red stay around 600.
+const REF_MID_STEP = 5; // index of step 500
+const REF_MID_BASE = 0.3;
+const REF_MID_CUSP = 0.58;
+const ANCHOR_CHROMA_WEIGHT = 0.5; // how much chroma counts next to lightness when picking the anchor
+const MIN_EDGE_GAP = 0.012; // min lightness gap per step when the anchor is close to step 50 / 950
+const L_TOP = 0.995;
+const L_BOTTOM = 0.08;
+// Yellows darken towards amber/brown instead of olive (and lighten slightly towards lemon).
+const YELLOW_HUE_FADE_IN = [60, 85];
+const YELLOW_HUE_FADE_OUT = [112, 130];
+const YELLOW_SHIFT_DARK = -35; // degrees at step 950
+const YELLOW_SHIFT_LIGHT = 8; // degrees at step 50
 
 /* ---------- hex helpers ---------- */
 
@@ -104,13 +119,55 @@ function oklchToHex(L, C, h) {
 
 /* ---------- scales ---------- */
 
-const refLightness = (i) => L_MAX - ((L_MAX - L_MIN) * i) / (STEPS.length - 1);
+// Largest chroma that fits sRGB at this L and h.
+function maxChroma(L, h) {
+  let lo = 0;
+  let hi = 0.4;
+  for (let i = 0; i < 24; i++) {
+    const mid = (lo + hi) / 2;
+    if (inGamut(oklchToLinear(L, mid, h))) lo = mid;
+    else hi = mid;
+  }
+  return lo;
+}
 
-function anchorIndex(L) {
+// Lightness where the hue reaches its maximum sRGB chroma (coarse search, enough for the anchor).
+function cuspLightness(h) {
+  let bestL = 0.5;
+  let bestC = -1;
+  for (let L = 0.2; L <= 0.99; L += 0.005) {
+    const c = maxChroma(L, h);
+    if (c > bestC) {
+      bestC = c;
+      bestL = L;
+    }
+  }
+  return bestL;
+}
+
+const lightTaper = (s) => 1 - (1 - EDGE_CHROMA_LIGHT) * s ** 1.4;
+const darkTaper = (s) => 1 - (1 - EDGE_CHROMA_DARK) * s ** 1.4;
+
+function anchorIndex({ L, C, h }) {
+  const last = STEPS.length - 1;
+  const mid = C < 1e-4 ? 0.5 : cuspLightness(h);
+  const midL = REF_MID_BASE + REF_MID_CUSP * mid;
   let best = 0;
   let bestDist = Infinity;
-  for (let i = 0; i < STEPS.length; i++) {
-    const d = Math.abs(refLightness(i) - L);
+  for (let i = 0; i <= last; i++) {
+    let refL;
+    let taper;
+    if (i <= REF_MID_STEP) {
+      const s = (REF_MID_STEP - i) / REF_MID_STEP;
+      refL = midL + (L_MAX - midL) * s;
+      taper = lightTaper(s);
+    } else {
+      const s = (i - REF_MID_STEP) / (last - REF_MID_STEP);
+      refL = midL + (L_MIN - midL) * s;
+      taper = darkTaper(s);
+    }
+    const refC = Math.min(C, maxChroma(refL, h)) * taper;
+    const d = Math.hypot(refL - L, ANCHOR_CHROMA_WEIGHT * (refC - C));
     if (d < bestDist) {
       bestDist = d;
       best = i;
@@ -119,15 +176,30 @@ function anchorIndex(L) {
   return best;
 }
 
+// 0..1: how much of the yellow hue correction applies to this hue.
+function yellowWeight(h) {
+  const [a0, a1] = YELLOW_HUE_FADE_IN;
+  const [b0, b1] = YELLOW_HUE_FADE_OUT;
+  if (h <= a0 || h >= b1) return 0;
+  if (h < a1) return (h - a0) / (a1 - a0);
+  if (h > b0) return (b1 - h) / (b1 - b0);
+  return 1;
+}
+
 export function nearestStep(hex) {
-  return STEPS[anchorIndex(hexToOklch(requireHex(hex)).L)];
+  return STEPS[anchorIndex(hexToOklch(requireHex(hex)))];
 }
 
 export function generateScale(hex) {
   const brand = requireHex(hex);
-  const { L, C, h } = hexToOklch(brand);
-  const k = anchorIndex(L);
+  const lch = hexToOklch(brand);
+  const { L, C, h } = lch;
+  const k = anchorIndex(lch);
   const last = STEPS.length - 1;
+  const yw = C < 1e-4 ? 0 : yellowWeight(h);
+  // Keep a visible lightness gap even when the anchor is next to an edge (e.g. #FFFF00).
+  const topL = Math.max(L_MAX, Math.min(L_TOP, L + MIN_EDGE_GAP * k));
+  const bottomL = Math.min(L_MIN, Math.max(L_BOTTOM, L - MIN_EDGE_GAP * (last - k)));
   const out = {};
 
   for (let i = 0; i <= last; i++) {
@@ -137,16 +209,19 @@ export function generateScale(hex) {
     }
     let stepL;
     let factor;
+    let stepH;
     if (i < k) {
       const s = (k - i) / k; // 0 at anchor, 1 at step 50
-      stepL = L + (L_MAX - L) * s;
-      factor = 1 - (1 - EDGE_CHROMA_LIGHT) * s ** 1.4;
+      stepL = L + (topL - L) * s;
+      factor = lightTaper(s);
+      stepH = h + YELLOW_SHIFT_LIGHT * yw * s;
     } else {
       const s = (i - k) / (last - k); // 0 at anchor, 1 at step 950
-      stepL = L + (L_MIN - L) * s;
-      factor = 1 - (1 - EDGE_CHROMA_DARK) * s ** 1.4;
+      stepL = L + (bottomL - L) * s;
+      factor = darkTaper(s);
+      stepH = h + YELLOW_SHIFT_DARK * yw * s;
     }
-    out[STEPS[i]] = oklchToHex(stepL, C * factor, h);
+    out[STEPS[i]] = oklchToHex(stepL, C * factor, (stepH + 360) % 360);
   }
   return out;
 }
